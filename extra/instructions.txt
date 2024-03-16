@@ -1,0 +1,26 @@
+Write Implementation of perceptron.
+
+Program allows training a perceptron that recognizes 2 classes.
+User provide arguments (command line arguments or in command line after run or in gui):
+-path to file with training data
+-path to file with test data
+-learning rate
+-number of epochs - one epoch is one training iteration through the whole training data
+
+Weights and threshold of perceptron are initialized as some small numbers close to 0. Perceptron is trained using delta rule for a given number of epochs on the training data.
+Print accuracy on the test set after each epoch.
+
+Training data may be shuffled after each epoch to get better results.
+
+After training and testing,  program asks in a loop:
+enter new observations from command line (or gui) and predict the class
+exit program
+
+Program should be universal (same as for knn) - it should work for any number of numerical attributes and one decision attribute that may take exactly 2 nominal values.
+The program should be written independently. It is not possible to use ready-made libraries implementing machine learning algorithms.
+
+The code (only the file with code not the whole project) should be placed in the appropriate task on the teams’ platform before class
+es and presented during classes.
+Only programs that meet the described requirements will be checked!
+
+Optional: graphical visualization of perceptron on 2 dimensional data
