@@ -1,13 +1,15 @@
 import sys
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSpinBox
 from stylesheets import sheet_dark
+from classifier import Classifier
 
 
 class ParametrizeWindow(QWidget):
     def __init__(self, app):
         super().__init__()
-        # Basic window paramters
+        # Assign
         self.app = app
+        # Basic window parameters
         self.setWindowTitle("Perceptron Classifier")
         self.setGeometry(100, 100, 400, 200)
         # Adjust location on screen
@@ -21,8 +23,10 @@ class ParametrizeWindow(QWidget):
         self.train_button = QPushButton("Train", self)
         # Create widgets
         self.create_widgets()
-        # Create second window for classification
-        self.classify_window = ClassifyWindow(self.app)
+        # Prepare reference for second window for classification interface
+        self.classify_window = False
+        # Prepare reference for classifier
+        self.classifier = False
 
     def create_widgets(self):
         # Specify layouts
@@ -33,11 +37,11 @@ class ParametrizeWindow(QWidget):
 
         # Create widgets : labels, text fields, spinners
         left_column_layout.addWidget(QLabel("Train Data Path : "))
-        self.train_data_path_input.setText("../data/")
+        self.train_data_path_input.setText("../data/iris/training.txt")
         left_column_layout.addWidget(self.train_data_path_input)
 
         left_column_layout.addWidget(QLabel("Test Data Path : "))
-        self.test_data_path_input.setText("../data/")
+        self.test_data_path_input.setText("../data/iris/test.txt")
         left_column_layout.addWidget(self.test_data_path_input)
 
         right_column_layout.addWidget(QLabel("Learning rate : "))
@@ -69,15 +73,21 @@ class ParametrizeWindow(QWidget):
         learning_rate = self.learning_rate_input.value()
         epochs = self.epochs_input.value()
 
+        # Initialize classifier and run classification
+        self.classifier = Classifier(train_data, test_data, learning_rate, epochs)
+
         # Open classification window
+        self.classify_window = ClassifyWindow(self.app, self.classifier)
         self.classify_window.show()
         self.close()
 
 
 class ClassifyWindow(QWidget):
-    def __init__(self, app):
-        self.app = app
+    def __init__(self, app, classifier):
         super().__init__()
+        # Assign
+        self.app = app
+        self.classifier = classifier
         # Basic window parameters
         self.setWindowTitle("Perceptron Classifier")
         self.setGeometry(100, 100, 400, 200)
