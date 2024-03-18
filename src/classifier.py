@@ -37,18 +37,20 @@ class Classifier:
         # Determine classes-labels map them with numeric values for easier computation
         self.classes_map = self.find_classes_labels()
         # Extract all the observations from train file
-        self.observations = self.extract_observations()
+        self.observations = self.extract_observations(self.train_file_path)
+        # Extract all the observations from test file
+        self.test_observations = self.extract_observations(self.test_file_path)
         # Set up for learning
         self.num_of_dimensions = self.observations[0].num_of_attributes - 1
         self.weights = self.initialize_starter_weights()
+        self.accuracy_list = []
         # Train
         self.train()
 
     def train(self):
         # Iterate 'epoch' number of times
         for epoch in range(0, self.epochs):
-            shuffle(self.observations)
-            # Before each iteration shuffle the order of observations
+
             for observation in self.observations:
                 vector = observation.values
                 y = self.classify(vector)
@@ -60,15 +62,38 @@ class Classifier:
                     direction = d - y
                     delta_update_weights(direction, self.learning_rate, vector, self.weights)
 
+            # After each iteration shuffle the order of observations
+            shuffle(self.observations)
+            # After each epoch calculate the accuracy
+            self.accuracy_list.append(self.evaluate_accuracy())
+
     def classify(self, vector):
         # add constant value at index 0 if needed
         if len(vector) != self.num_of_dimensions + 1:
             vector.insert(0,1)
         # Calculate the dot product between vector and weights
         # (treshold included in formula as a constant element of vector and weights)
-        y = dot_product(vector, self.weights)
+        y = dot_product(tuple(vector), tuple(self.weights))
         # Perform the heavy side function
         return heavy_side(y)
+
+    def evaluate_accuracy(self):
+        # Store number of successful tests
+        successes = 0
+        total = len(self.test_observations)
+        # Classify each observation from test observations list
+        # It the outcome of classification will be just as desired increment successes counter
+        for observation in self.test_observations:
+            vector = observation.values
+            y = self.classify(vector)
+            # y - computed result of classification, d - desired result of classification
+            d = self.classes_map[observation.label]
+            # If computed class equals the true one (desired) then it is a success
+            if y == d:
+                successes += 1
+
+        # Return the classification accuracy
+        return successes/total
 
     def find_classes_labels(self):
         classes_map = dict()
@@ -85,12 +110,12 @@ class Classifier:
 
         return classes_map
 
-    def extract_observations(self):
+    def extract_observations(self, source_file):
         # Store observations in a list
         observations_list = []
 
-        # Open file with train data
-        with (open(self.train_file_path, "r") as file):
+        # Open file with data
+        with (open(source_file, "r") as file):
             for line in file:
                 line = line.split(",")
                 # Create observation
@@ -103,7 +128,8 @@ class Classifier:
                 # Add new observation
                 observations_list.append(observation)
 
-        # Collect all observations from train data file into list
+        # Collect all observations from source data file into list
+        # It works for train data file as well as for test data file
         return observations_list
 
     def initialize_starter_weights(self):
@@ -113,14 +139,6 @@ class Classifier:
         weights.insert(0, bias)
         return weights
 
-    def classify_user_input_to_label(self, csv_input):
-        # Convert user string in csv format into list
-        csv_input = csv_input.split(",")
-        # Convert it into float list
-        vector = [float(e) for e in csv_input]
-        # Result is a classification mapped with corresponding label
-        result = return_key_by_value(self.classes_map, self.classify(vector))
-        return result
 
     def test(self):
         print(self.classes_map)

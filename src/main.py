@@ -48,8 +48,8 @@ def draw_bar_plot():
 
 train_file_path = "../data/example/train.txt"
 test_file_path = "../data/example/test.txt"
-learning_rate = 0.2
-epochs = 10
+learning_rate = -0.1
+epochs = 1
 
 draw_bar_plot()
 testClassifier()

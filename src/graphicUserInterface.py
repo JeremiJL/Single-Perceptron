@@ -1,13 +1,14 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSpinBox
-from stylesheets import sheet_dark
+
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSpinBox, \
+    QDial
 from classifier import Classifier
 
 
 class ParametrizeWindow(QWidget):
     def __init__(self, app):
         super().__init__()
-        # Assign
+        # Assign parent component
         self.app = app
         # Basic window parameters
         self.setWindowTitle("Perceptron Classifier")
@@ -35,36 +36,38 @@ class ParametrizeWindow(QWidget):
         left_column_layout = QVBoxLayout()
         right_column_layout = QVBoxLayout()
 
-        # Create widgets : labels, text fields, spinners
+        # Create label and text field asking for train data file path
         left_column_layout.addWidget(QLabel("Train Data Path : "))
         self.train_data_path_input.setText("../data/iris/training.txt")
         left_column_layout.addWidget(self.train_data_path_input)
 
+        # Create label and text field asking for test data file path
         left_column_layout.addWidget(QLabel("Test Data Path : "))
         self.test_data_path_input.setText("../data/iris/test.txt")
         left_column_layout.addWidget(self.test_data_path_input)
 
+        # Create label and spinner asking for value of learning rate
         right_column_layout.addWidget(QLabel("Learning rate : "))
         self.learning_rate_input.setMaximum(99)
         self.learning_rate_input.setMinimum(1)
         right_column_layout.addWidget(self.learning_rate_input)
 
+        # Create label and text field asking for number of epochs
         right_column_layout.addWidget(QLabel("Number of epochs :"))
         self.epochs_input.setMinimum(1)
         right_column_layout.addWidget(self.epochs_input)
 
-        top_row_layout.addLayout(left_column_layout)
-        top_row_layout.addLayout(right_column_layout)
-
-        main_layout.addLayout(top_row_layout)
-
-        # train button
+        # Create train button
         self.train_button.setFixedWidth(100)
         self.train_button.clicked.connect(self.train)
-        main_layout.addWidget(self.train_button)
 
+        # Bound layouts together
         self.setLayout(main_layout)
-        self.setStyleSheet(sheet_dark)
+        top_row_layout.addLayout(left_column_layout)
+        top_row_layout.addLayout(right_column_layout)
+        main_layout.addLayout(top_row_layout)
+        # Add train button late in order to place him in the bottom
+        main_layout.addWidget(self.train_button)
 
     def train(self):
         # Extract input data
@@ -74,7 +77,7 @@ class ParametrizeWindow(QWidget):
         epochs = self.epochs_input.value()
 
         # Initialize classifier and run classification
-        self.classifier = Classifier(train_data, test_data, learning_rate, epochs)
+        self.classifier = Classifier(train_data, test_data, learning_rate/100, epochs)
 
         # Open classification window
         self.classify_window = ClassifyWindow(self.app, self.classifier)
@@ -85,42 +88,87 @@ class ParametrizeWindow(QWidget):
 class ClassifyWindow(QWidget):
     def __init__(self, app, classifier):
         super().__init__()
-        # Assign
+        # Assign parent component
         self.app = app
+        # Store classifier reference for communication
         self.classifier = classifier
         # Basic window parameters
         self.setWindowTitle("Perceptron Classifier")
-        self.setGeometry(100, 100, 400, 200)
         # Adjust location on screen
-        center_loc = app.primaryScreen().geometry().center() - self.rect().center()
+        center_loc = self.app.primaryScreen().geometry().center() - self.rect().center()
         self.move(center_loc)
+        # Store text fields for attributes values input
+        self.attributes_line_edits = []
+        self.classification_result = QLabel("Classification Result: ...")
         # Create widgets
         self.create_widgets()
 
     def create_widgets(self):
         # Specify layout
-        layout = QVBoxLayout()
+        main_layout = QHBoxLayout()
+        left_column_layout = QVBoxLayout()
+        right_column_layout = QVBoxLayout()
 
-        info_label = QLabel("Enter data to classify. Separate attribute values with comma.")
-        layout.addWidget(info_label)
+        # Create label prompting user to provide data for classification
+        info_label = QLabel("Provide observation data for classification :")
+        left_column_layout.addWidget(info_label)
 
-        classify_data_input = QLineEdit()
-        layout.addWidget(classify_data_input)
+        # Provide text fields allowing user to provide attributes values of data
+        for le in range(self.classifier.num_of_dimensions):
+            attribute_input = QLineEdit(self)
+            attribute_input.setFixedWidth(100)
+            left_column_layout.addWidget(QLabel("Value of attribute " + str(le) + " : "))
+            left_column_layout.addWidget(attribute_input)
+            self.attributes_line_edits.append(attribute_input)
 
+        # Create label informing about classification outcome
+        self.classification_result.setVisible(False)
+        left_column_layout.addWidget(self.classification_result)
+
+        # Crate classify button that triggers the classification method of classifier
         classify_button = QPushButton("Classify")
-        classify_button.setFixedWidth(100)
-        layout.addWidget(classify_button)
+        classify_button.clicked.connect(self.ask_to_classify)
+        left_column_layout.addWidget(classify_button)
 
-        self.setLayout(layout)
-        self.setStyleSheet(sheet_dark)
+        # Inform about accuracy results from epochs
+        accuracy_label = QLabel("Perceptron accuracy on test set after each epoch :")
+        right_column_layout.addWidget(accuracy_label)
+
+        # Crate show plot button that creates new window with plot
+        classify_button = QPushButton("Show plot")
+        right_column_layout.addWidget(classify_button)
+
+        # Bound layouts together
+        self.setLayout(main_layout)
+        main_layout.addLayout(left_column_layout)
+        main_layout.addLayout(right_column_layout)
+
+    def ask_to_classify(self):
+        # Extract vector data from text fields
+        vector = [float(val.text()) for val in self.attributes_line_edits]
+        print(vector)
+        # Use classifier to classify values given by user
+        int_val = self.classifier.classify(vector)
+        result = self.classifier.return_key_by_value(self.classifier.classes_map, int_val)
+        # Display classification result
+        # self.classification_result.setVisible(True)
+        # self.classification_result.setText(result)
+
+
+    # def update_accuracy_display(self, classifier, label_widget):
+    #     while len(classifier.accuracy_list) < classifier.epochs:
+    #         text = "Perceptron accuracy on test set after each epoch :\n" + ", ".join(classifier.accuracy_list)
+    #         print(text)
+    #         # label_widget.setText(text)
 
 
 def main():
+    # Create pyqt application
     app = QApplication(sys.argv)
     # Crete first window for initializing perceptron parameters
     parametrize_window = ParametrizeWindow(app)
     parametrize_window.show()
-
+    # Exit
     sys.exit(app.exec())
 
 
