@@ -1,8 +1,12 @@
 import sys
-
+import matplotlib.pyplot as plt
 from PyQt6.QtCore import QRunnable, QThreadPool, QThread
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSpinBox
+from PyQt6.QtWidgets import QApplication, QDial, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSpinBox, \
+    QGridLayout
 from copy import deepcopy
+
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
+
 from classifier import Classifier, return_key_by_value
 
 
@@ -15,15 +19,17 @@ class ParametrizeWindow(QWidget):
         self.threadpool = QThreadPool()
         # Basic window parameters
         self.setWindowTitle("Perceptron Classifier")
-        self.setGeometry(100, 100, 400, 200)
+        self.setGeometry(100, 100, 620, 200)
         # Adjust location on screen
         center_loc = app.primaryScreen().geometry().center() - self.rect().center()
         self.move(center_loc)
         # Init widgets
+        self.learning_rate_info = QLabel("Learning rate : 0.01")
+        self.epochs_info = QLabel("Number of epochs : 1")
         self.train_data_path_input = QLineEdit(self)
         self.test_data_path_input = QLineEdit(self)
-        self.learning_rate_input = QSpinBox(self)
-        self.epochs_input = QSpinBox(self)
+        self.learning_rate_input = QDial(self)
+        self.epochs_input = QDial(self)
         self.train_button = QPushButton("Train", self)
         # Create widgets
         self.create_widgets()
@@ -41,23 +47,28 @@ class ParametrizeWindow(QWidget):
 
         # Create label and text field asking for train data file path
         left_column_layout.addWidget(QLabel("Train Data Path : "))
-        self.train_data_path_input.setText("../data/iris/training.txt")
+        self.train_data_path_input.setText("../data/example/train.txt")
         left_column_layout.addWidget(self.train_data_path_input)
 
         # Create label and text field asking for test data file path
         left_column_layout.addWidget(QLabel("Test Data Path : "))
-        self.test_data_path_input.setText("../data/iris/test.txt")
+        self.test_data_path_input.setText("../data/example/test.txt")
         left_column_layout.addWidget(self.test_data_path_input)
 
-        # Create label and spinner asking for value of learning rate
-        right_column_layout.addWidget(QLabel("Learning rate : "))
+        # Create label and dial asking for value of learning rate
         self.learning_rate_input.setMaximum(99)
         self.learning_rate_input.setMinimum(1)
+        self.learning_rate_info.setFixedWidth(150)
+        self.learning_rate_input.valueChanged.connect(self.update_learning_rate_label)
+        right_column_layout.addWidget(self.learning_rate_info)
         right_column_layout.addWidget(self.learning_rate_input)
 
-        # Create label and text field asking for number of epochs
-        right_column_layout.addWidget(QLabel("Number of epochs :"))
+        # Create label and dial asking for number of epochs
         self.epochs_input.setMinimum(1)
+        self.epochs_input.setMaximum(200)
+        self.epochs_info.setFixedWidth(150)
+        self.epochs_input.valueChanged.connect(self.update_epochs_label)
+        right_column_layout.addWidget(self.epochs_info)
         right_column_layout.addWidget(self.epochs_input)
 
         # Create train button
@@ -72,6 +83,12 @@ class ParametrizeWindow(QWidget):
         # Add train button late in order to place him in the bottom
         main_layout.addWidget(self.train_button)
 
+    def update_learning_rate_label(self):
+        self.learning_rate_info.setText("Learning rate : " + str(self.learning_rate_input.value() / 100))
+
+    def update_epochs_label(self):
+        self.epochs_info.setText("Number of epochs : " + str(self.epochs_input.value()))
+
     def train(self):
         # Extract input data
         train_data = self.train_data_path_input.text()
@@ -80,7 +97,7 @@ class ParametrizeWindow(QWidget):
         epochs = self.epochs_input.value()
 
         # Initialize classifier and run classification
-        self.classifier = Classifier(train_data, test_data, learning_rate/100, epochs)
+        self.classifier = Classifier(train_data, test_data, learning_rate / 100, epochs)
         worker = Worker(self.classifier.begin)
         self.threadpool.start(worker)
 
@@ -104,6 +121,8 @@ class ClassifyWindow(QWidget):
         # Adjust location on screen
         center_loc = self.app.primaryScreen().geometry().center() - self.rect().center()
         self.move(center_loc)
+        # Store reference to plot window
+        self.plot_window = False
         # Store text fields for attributes values input
         self.attributes_line_edits = []
         self.classification_result = QLabel("Classification Result: ...")
@@ -146,16 +165,25 @@ class ClassifyWindow(QWidget):
         self.threadpool.start(worker)
 
         # Crate show plot button that creates new window with plot
-        classify_button = QPushButton("Show plot")
-        right_column_layout.addWidget(classify_button)
+        plot_button = QPushButton("Show plot")
+        # Disable this button if number of dimensions makes it
+        # impossible to draw perceptron on a plane
+        if self.classifier.num_of_dimensions != 2:
+            plot_button.setDisabled(True)
+        plot_button.clicked.connect(self.show_plot_in_new_window)
+        right_column_layout.addWidget(plot_button)
 
         # Bound layouts together
         self.setLayout(main_layout)
         main_layout.addLayout(left_column_layout)
         main_layout.addLayout(right_column_layout)
 
+    def show_plot_in_new_window(self):
+        self.plot_window = PlotWindow(self.app, self.classifier)
+        self.plot_window.show()
+
     def update_accuracy_results(self):
-        # Hold until computations are complete inside classfier
+        # Hold until computations are complete inside classifier
         while not self.classifier.finished:
             pass
         # Afterward update label text to inform about accuracy results
@@ -170,7 +198,6 @@ class ClassifyWindow(QWidget):
 
         self.accuracy_label.setText(str(new_text) + str("  ".join(results)))
 
-
     def ask_to_classify(self):
         # # Extract vector data from text fields
         vector = [float(val.text()) for val in self.attributes_line_edits]
@@ -180,6 +207,64 @@ class ClassifyWindow(QWidget):
         # # Display classification result
         self.classification_result.setVisible(True)
         self.classification_result.setText("Result of classification : " + str(result))
+
+
+class PlotWindow(QWidget):
+    def __init__(self, app, classifier):
+        super().__init__()
+        # Assign parent component
+        self.app = app
+        # Assign classifier
+        self.classifier = classifier
+        # Basic window parameters
+        self.setWindowTitle("Perceptron Classifier")
+        self.setGeometry(100, 100, 600, 600)
+        # Store reference for figure - canvas
+        self.my_fig = False
+        # Create widgets
+        self.create_widgets()
+
+    def create_widgets(self):
+        # Abbreviation for classifier reference
+        c = self.classifier
+        # Specify layouts
+        main_layout = QVBoxLayout()
+        # Create figure
+        self.my_fig = Canvas(self, 10, 5)
+
+        # Creating the data set
+        x_values = [x for z, x, y, in [o.values for o in c.observations]]
+        y_values = [y for z, x, y, in [o.values for o in c.observations]]
+
+        # Adjusting appearance
+        colors = ['red' if c.classify([x, y]) == 0 else 'green' for x, y in zip(x_values, y_values)]
+
+        # Plotting observations
+        self.my_fig.my_plot.scatter(x_values, y_values, c=colors)
+
+        # Setting names
+        self.my_fig.my_plot.set_title("Perceptron")
+
+        main_layout.addWidget(self.my_fig)
+
+        # Create button to save plot as image
+        button_save = QPushButton("Save as png")
+        button_save.clicked.connect(self.save_plot_as_image)
+        main_layout.addWidget(button_save)
+
+        # Bound window with layout
+        self.setLayout(main_layout)
+
+    def save_plot_as_image(self):
+        self.my_fig.fig.savefig("../plots/plot.png")
+
+
+class Canvas(FigureCanvasQTAgg):
+
+    def __init__(self, parent=None, width=10, height=5, dpi=100):
+        self.fig = plt.Figure(figsize=(width, height), dpi=dpi)
+        self.my_plot = self.fig.add_subplot()
+        super(Canvas, self).__init__(self.fig)
 
 
 class Worker(QRunnable):
@@ -195,10 +280,55 @@ class Worker(QRunnable):
 
 # Create pyqt application
 app = QApplication(sys.argv)
+# Applying style sheet
+style_sheet = """
+/* Global styles */
+QWidget {
+    background-color: #f0f0f0; /* Light gray background */
+    color: #333; /* Dark gray text */
+    font-family: Arial, sans-serif; /* Default font */
+}
+
+/* Push button */
+QPushButton {
+    background-color: #4CAF50; /* Green button */
+    color: white; /* White text */
+    border: none; /* No border */
+    border-radius: 4px; /* Rounded corners */
+    padding: 8px 16px; /* Padding */
+    font-size: 14px; /* Font size */
+}
+
+QPushButton:hover {
+    background-color: #45a049; /* Darker green on hover */
+}
+
+/* Line edit */
+QLineEdit {
+    background-color: white; /* White background */
+    border: 1px solid #ccc; /* Gray border */
+    border-radius: 4px; /* Rounded corners */
+    padding: 4px; /* Padding */
+    font-size: 16px; /* Font size */
+}
+
+/* Spin box */
+QSpinBox {
+    background-color: white; /* White background */
+    border: 1px solid #ccc; /* Gray border */
+    border-radius: 4px; /* Rounded corners */
+    padding: 4px; /* Padding */
+    font-size: 14px; /* Font size */
+}
+
+/* Label */
+QLabel {
+    color: #666; /* Gray text */
+    font-size: 14px; /* Font size */
+}
+"""
+app.setStyleSheet(style_sheet)
 # Crete first window for initializing perceptron parameters
 parametrize_window = ParametrizeWindow(app)
 parametrize_window.show()
 sys.exit(app.exec())
-
-
-
