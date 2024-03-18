@@ -34,6 +34,13 @@ class Classifier:
         self.test_file_path = test_file_path
         self.learning_rate = learning_rate
         self.epochs = epochs
+        self.accuracy_list = []
+        # Start time-consuming tasks
+        self.begin()
+        # Flag indicating that training on data set is completed
+        self.finished = False
+
+    def begin(self):
         # Determine classes-labels map them with numeric values for easier computation
         self.classes_map = self.find_classes_labels()
         # Extract all the observations from train file
@@ -43,7 +50,6 @@ class Classifier:
         # Set up for learning
         self.num_of_dimensions = self.observations[0].num_of_attributes - 1
         self.weights = self.initialize_starter_weights()
-        self.accuracy_list = []
         # Train
         self.train()
 
@@ -66,6 +72,8 @@ class Classifier:
             shuffle(self.observations)
             # After each epoch calculate the accuracy
             self.accuracy_list.append(self.evaluate_accuracy())
+        #  After whole training process is completed raise flag
+        self.finished = True
 
     def classify(self, vector):
         # add constant value at index 0 if needed

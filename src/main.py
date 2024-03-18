@@ -4,12 +4,7 @@ import matplotlib.pyplot as plt
 
 def testClassifier():
     c = classifier.Classifier(train_file_path, test_file_path, learning_rate, epochs)
-    print("should be 0", c.classify_user_input_to_label("4,5"))
-    print("should be 0", c.classify_user_input_to_label("1,3"))
-    print("should be 1", c.classify_user_input_to_label("60,5"))
-    print("should be 1", c.classify_user_input_to_label("30,0"))
-    print("should be 1", c.classify_user_input_to_label("20,10"))
-    print("should be 0", c.classify_user_input_to_label(" 3,4"))
+    c.begin()
 
     print(c.weights)
 
@@ -48,8 +43,8 @@ def draw_bar_plot():
 
 train_file_path = "../data/example/train.txt"
 test_file_path = "../data/example/test.txt"
-learning_rate = -0.1
-epochs = 1
+learning_rate = 10
+epochs = 50
 
 draw_bar_plot()
 testClassifier()

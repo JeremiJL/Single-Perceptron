@@ -1,8 +1,9 @@
 import sys
 
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSpinBox, \
-    QDial
-from classifier import Classifier
+from PyQt6.QtCore import QRunnable, QThreadPool, QThread
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSpinBox
+from copy import deepcopy
+from classifier import Classifier, return_key_by_value
 
 
 class ParametrizeWindow(QWidget):
@@ -10,6 +11,8 @@ class ParametrizeWindow(QWidget):
         super().__init__()
         # Assign parent component
         self.app = app
+        # Assign thread pool
+        self.threadpool = QThreadPool()
         # Basic window parameters
         self.setWindowTitle("Perceptron Classifier")
         self.setGeometry(100, 100, 400, 200)
@@ -78,18 +81,22 @@ class ParametrizeWindow(QWidget):
 
         # Initialize classifier and run classification
         self.classifier = Classifier(train_data, test_data, learning_rate/100, epochs)
+        worker = Worker(self.classifier.begin)
+        self.threadpool.start(worker)
 
         # Open classification window
-        self.classify_window = ClassifyWindow(self.app, self.classifier)
+        self.classify_window = ClassifyWindow(self.app, self.threadpool, self.classifier)
         self.classify_window.show()
         self.close()
 
 
 class ClassifyWindow(QWidget):
-    def __init__(self, app, classifier):
+    def __init__(self, app, threadpool, classifier):
         super().__init__()
         # Assign parent component
         self.app = app
+        # Assign thread pool
+        self.threadpool = threadpool
         # Store classifier reference for communication
         self.classifier = classifier
         # Basic window parameters
@@ -100,6 +107,7 @@ class ClassifyWindow(QWidget):
         # Store text fields for attributes values input
         self.attributes_line_edits = []
         self.classification_result = QLabel("Classification Result: ...")
+        self.accuracy_label = QLabel("Perceptron accuracy on test set after each epoch :\n")
         # Create widgets
         self.create_widgets()
 
@@ -131,8 +139,11 @@ class ClassifyWindow(QWidget):
         left_column_layout.addWidget(classify_button)
 
         # Inform about accuracy results from epochs
-        accuracy_label = QLabel("Perceptron accuracy on test set after each epoch :")
-        right_column_layout.addWidget(accuracy_label)
+        right_column_layout.addWidget(self.accuracy_label)
+
+        # Create thread that will update accuracy label text, based on ongoing computations
+        worker = Worker(self.update_accuracy_results)
+        self.threadpool.start(worker)
 
         # Crate show plot button that creates new window with plot
         classify_button = QPushButton("Show plot")
@@ -143,34 +154,51 @@ class ClassifyWindow(QWidget):
         main_layout.addLayout(left_column_layout)
         main_layout.addLayout(right_column_layout)
 
+    def update_accuracy_results(self):
+        # Hold until computations are complete inside classfier
+        while not self.classifier.finished:
+            pass
+        # Afterward update label text to inform about accuracy results
+        new_text = self.accuracy_label.text()
+        results = [""]
+        count = 1
+        for e in self.classifier.accuracy_list:
+            results.append(str(float.__round__(e, 2)))
+            if count % 5 == 0:
+                results.append("\n")
+            count += 1
+
+        self.accuracy_label.setText(str(new_text) + str("  ".join(results)))
+
+
     def ask_to_classify(self):
-        # Extract vector data from text fields
+        # # Extract vector data from text fields
         vector = [float(val.text()) for val in self.attributes_line_edits]
-        print(vector)
         # Use classifier to classify values given by user
         int_val = self.classifier.classify(vector)
-        result = self.classifier.return_key_by_value(self.classifier.classes_map, int_val)
-        # Display classification result
-        # self.classification_result.setVisible(True)
-        # self.classification_result.setText(result)
+        result = return_key_by_value(self.classifier.classes_map, int_val)
+        # # Display classification result
+        self.classification_result.setVisible(True)
+        self.classification_result.setText("Result of classification : " + str(result))
 
 
-    # def update_accuracy_display(self, classifier, label_widget):
-    #     while len(classifier.accuracy_list) < classifier.epochs:
-    #         text = "Perceptron accuracy on test set after each epoch :\n" + ", ".join(classifier.accuracy_list)
-    #         print(text)
-    #         # label_widget.setText(text)
+class Worker(QRunnable):
+
+    def __init__(self, function, *args, **kwargs):
+        super().__init__()
+        self.args = args
+        self.function = function
+
+    def run(self):
+        self.function()
 
 
-def main():
-    # Create pyqt application
-    app = QApplication(sys.argv)
-    # Crete first window for initializing perceptron parameters
-    parametrize_window = ParametrizeWindow(app)
-    parametrize_window.show()
-    # Exit
-    sys.exit(app.exec())
+# Create pyqt application
+app = QApplication(sys.argv)
+# Crete first window for initializing perceptron parameters
+parametrize_window = ParametrizeWindow(app)
+parametrize_window.show()
+sys.exit(app.exec())
 
 
-if __name__ == '__main__':
-    main()
+
