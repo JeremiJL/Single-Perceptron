@@ -1,0 +1,47 @@
+/* Global styles */
+QWidget {
+    background-color: #222831; /* Light gray background */
+    color: #EEEEEE; /* Dark gray text */
+    font-family: Consolas; /* Default font */
+    font-size: medium;
+}
+
+/* Push button */
+QPushButton {
+    background-color: #41B06E; /* Green button */
+    color: white; /* White text */
+    border: none; /* No border */
+    border-radius: 4px; /* Rounded corners */
+    padding: 8px 16px; /* Padding */
+    font-size: 14px; /* Font size */
+}
+
+QPushButton:hover {
+    background-color: #45a049; /* Darker green on hover */
+}
+
+/* Line edit */
+QLineEdit {
+    background-color: #50727B; /* White background */
+    color: #EEEEEE;
+    border: 1px solid #ccc; /* Gray border */
+    border-radius: 4px; /* Rounded corners */
+    padding: 4px; /* Padding */
+    font-size: 16px; /* Font size */
+}
+
+/* Spin box */
+QDial {
+    background-color: #41B06E; /* White background */
+    border: 1px solid #ccc; /* Gray border */
+    color: #50727B;
+    border-radius: 4px; /* Rounded corners */
+    padding: 4px; /* Padding */
+    font-size: 14px; /* Font size */
+}
+
+/* Label */
+QLabel {
+    color: #EEEEEE; /* Gray text */
+    font-size: 14px; /* Font size */
+}

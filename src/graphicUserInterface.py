@@ -1,9 +1,8 @@
 import sys
 import matplotlib.pyplot as plt
-from PyQt6.QtCore import QRunnable, QThreadPool, QThread
-from PyQt6.QtWidgets import QApplication, QDial, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSpinBox, \
-    QGridLayout
-from copy import deepcopy
+from PyQt6.QtCore import QRunnable, QThreadPool
+from PyQt6.QtWidgets import QDial, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton
+
 
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 
@@ -19,7 +18,7 @@ class ParametrizeWindow(QWidget):
         self.threadpool = QThreadPool()
         # Basic window parameters
         self.setWindowTitle("Perceptron Classifier")
-        self.setGeometry(100, 100, 620, 200)
+        self.setGeometry(100, 100, 700, 220)
         # Adjust location on screen
         center_loc = app.primaryScreen().geometry().center() - self.rect().center()
         self.move(center_loc)
@@ -34,9 +33,9 @@ class ParametrizeWindow(QWidget):
         # Create widgets
         self.create_widgets()
         # Prepare reference for second window for classification interface
-        self.classify_window = False
+        self.classify_window = None
         # Prepare reference for classifier
-        self.classifier = False
+        self.classifier = None
 
     def create_widgets(self):
         # Specify layouts
@@ -58,7 +57,7 @@ class ParametrizeWindow(QWidget):
         # Create label and dial asking for value of learning rate
         self.learning_rate_input.setMaximum(99)
         self.learning_rate_input.setMinimum(1)
-        self.learning_rate_info.setFixedWidth(150)
+        self.learning_rate_info.setFixedWidth(200)
         self.learning_rate_input.valueChanged.connect(self.update_learning_rate_label)
         right_column_layout.addWidget(self.learning_rate_info)
         right_column_layout.addWidget(self.learning_rate_input)
@@ -66,7 +65,7 @@ class ParametrizeWindow(QWidget):
         # Create label and dial asking for number of epochs
         self.epochs_input.setMinimum(1)
         self.epochs_input.setMaximum(200)
-        self.epochs_info.setFixedWidth(150)
+        self.epochs_info.setFixedWidth(200)
         self.epochs_input.valueChanged.connect(self.update_epochs_label)
         right_column_layout.addWidget(self.epochs_info)
         right_column_layout.addWidget(self.epochs_input)
@@ -121,7 +120,7 @@ class ClassifyWindow(QWidget):
         center_loc = self.app.primaryScreen().geometry().center() - self.rect().center()
         self.move(center_loc)
         # Store reference to plot window
-        self.plot_window = False
+        self.plot_window = None
         # Store text fields for attributes values input
         self.attributes_line_edits = []
         self.classification_result = QLabel("Classification Result: ...")
@@ -191,7 +190,7 @@ class ClassifyWindow(QWidget):
         results = list()
         count = 1
         for e in self.classifier.accuracy_list:
-            results.append("{:4s}".format(str(float.__round__(e, 2))))
+            results.append("{:6s}".format(str(float.__round__(e, 2))))
             if count % 5 == 0:
                 results.append("\n")
             count += 1
@@ -220,7 +219,7 @@ class PlotWindow(QWidget):
         self.setWindowTitle("Perceptron Classifier")
         self.setGeometry(100, 100, 600, 600)
         # Store reference for figure - canvas
-        self.my_fig = False
+        self.my_fig = None
         # Create widgets
         self.create_widgets()
 
@@ -230,7 +229,7 @@ class PlotWindow(QWidget):
         # Specify layouts
         main_layout = QVBoxLayout()
         # Create figure
-        self.my_fig = Canvas(self, 10, 5)
+        self.my_fig = Canvas(10, 5)
 
         # Creating the data set
         x_values = [x for z, x, y, in [o.values for o in c.observations]]
@@ -259,76 +258,22 @@ class PlotWindow(QWidget):
         self.my_fig.fig.savefig("../plots/plot.png")
 
 
+# Plot helper class
 class Canvas(FigureCanvasQTAgg):
 
-    def __init__(self, parent=None, width=10, height=5, dpi=100):
+    def __init__(self, width=10, height=5, dpi=100):
         self.fig = plt.Figure(figsize=(width, height), dpi=dpi)
         self.my_plot = self.fig.add_subplot()
         super(Canvas, self).__init__(self.fig)
 
 
+# Multithread helper class
 class Worker(QRunnable):
 
-    def __init__(self, function, *args, **kwargs):
+    def __init__(self, function, *args):
         super().__init__()
         self.args = args
         self.function = function
 
     def run(self):
         self.function()
-
-
-# Create pyqt application
-app = QApplication(sys.argv)
-# Applying style sheet
-style_sheet = """
-/* Global styles */
-QWidget {
-    background-color: #f0f0f0; /* Light gray background */
-    color: #333; /* Dark gray text */
-    font-family: Arial, sans-serif; /* Default font */
-}
-
-/* Push button */
-QPushButton {
-    background-color: #4CAF50; /* Green button */
-    color: white; /* White text */
-    border: none; /* No border */
-    border-radius: 4px; /* Rounded corners */
-    padding: 8px 16px; /* Padding */
-    font-size: 14px; /* Font size */
-}
-
-QPushButton:hover {
-    background-color: #45a049; /* Darker green on hover */
-}
-
-/* Line edit */
-QLineEdit {
-    background-color: white; /* White background */
-    border: 1px solid #ccc; /* Gray border */
-    border-radius: 4px; /* Rounded corners */
-    padding: 4px; /* Padding */
-    font-size: 16px; /* Font size */
-}
-
-/* Spin box */
-QSpinBox {
-    background-color: white; /* White background */
-    border: 1px solid #ccc; /* Gray border */
-    border-radius: 4px; /* Rounded corners */
-    padding: 4px; /* Padding */
-    font-size: 14px; /* Font size */
-}
-
-/* Label */
-QLabel {
-    color: #666; /* Gray text */
-    font-size: 14px; /* Font size */
-}
-"""
-app.setStyleSheet(style_sheet)
-# Crete first window for initializing perceptron parameters
-parametrize_window = ParametrizeWindow(app)
-parametrize_window.show()
-sys.exit(app.exec())

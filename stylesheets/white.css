@@ -2,7 +2,8 @@
 QWidget {
     background-color: #f0f0f0; /* Light gray background */
     color: #333; /* Dark gray text */
-    font-family: Arial, sans-serif; /* Default font */
+    font-family: Consolas; /* Default font */
+    font-size: medium;
 }
 
 /* Push button */
