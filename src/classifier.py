@@ -35,8 +35,6 @@ class Classifier:
         self.learning_rate = learning_rate
         self.epochs = epochs
         self.accuracy_list = []
-        # Start time-consuming tasks
-        self.begin()
         # Flag indicating that training on data set is completed
         self.finished = False
 
@@ -52,8 +50,9 @@ class Classifier:
         self.weights = self.initialize_starter_weights()
         # Train
         self.train()
-        # Test
-        # self.test()
+        # Flag indicating that training on data set is completed
+        self.finished = True
+
 
     def train(self):
         # Iterate 'epoch' number of times
@@ -155,9 +154,10 @@ class Classifier:
 
 
     def test(self):
-        print("Number of precision values", len(self.accuracy_list))
-        print(self.classes_map)
-        print(self.weights)
-
-        for o in self.observations:
-            print(str(o))
+        print("I am created")
+        # print("Number of precision values", len(self.accuracy_list))
+        # print(self.classes_map)
+        # print(self.weights)
+        #
+        # for o in self.observations:
+        #     print(str(o))
