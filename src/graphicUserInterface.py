@@ -24,8 +24,8 @@ class ParametrizeWindow(QWidget):
         center_loc = app.primaryScreen().geometry().center() - self.rect().center()
         self.move(center_loc)
         # Init widgets
-        self.learning_rate_info = QLabel("Learning rate : 0.01")
-        self.epochs_info = QLabel("Number of epochs : 1")
+        self.learning_rate_info = QLabel("Learning rate : ...")
+        self.epochs_info = QLabel("Number of epochs : ...")
         self.train_data_path_input = QLineEdit(self)
         self.test_data_path_input = QLineEdit(self)
         self.learning_rate_input = QDial(self)
@@ -188,14 +188,15 @@ class ClassifyWindow(QWidget):
             pass
         # Afterward update label text to inform about accuracy results
         new_text = self.accuracy_label.text()
-        results = [""]
+        print(new_text)
+        results = list()
         count = 1
         for e in self.classifier.accuracy_list:
             results.append(str(float.__round__(e, 2)))
             if count % 5 == 0:
                 results.append("\n")
             count += 1
-
+        print("results", results)
         self.accuracy_label.setText(str(new_text) + str("  ".join(results)))
 
     def ask_to_classify(self):
@@ -281,52 +282,7 @@ class Worker(QRunnable):
 # Create pyqt application
 app = QApplication(sys.argv)
 # Applying style sheet
-style_sheet = """
-/* Global styles */
-QWidget {
-    background-color: #f0f0f0; /* Light gray background */
-    color: #333; /* Dark gray text */
-    font-family: Arial, sans-serif; /* Default font */
-}
-
-/* Push button */
-QPushButton {
-    background-color: #4CAF50; /* Green button */
-    color: white; /* White text */
-    border: none; /* No border */
-    border-radius: 4px; /* Rounded corners */
-    padding: 8px 16px; /* Padding */
-    font-size: 14px; /* Font size */
-}
-
-QPushButton:hover {
-    background-color: #45a049; /* Darker green on hover */
-}
-
-/* Line edit */
-QLineEdit {
-    background-color: white; /* White background */
-    border: 1px solid #ccc; /* Gray border */
-    border-radius: 4px; /* Rounded corners */
-    padding: 4px; /* Padding */
-    font-size: 16px; /* Font size */
-}
-
-/* Spin box */
-QSpinBox {
-    background-color: white; /* White background */
-    border: 1px solid #ccc; /* Gray border */
-    border-radius: 4px; /* Rounded corners */
-    padding: 4px; /* Padding */
-    font-size: 14px; /* Font size */
-}
-
-/* Label */
-QLabel {
-    color: #666; /* Gray text */
-    font-size: 14px; /* Font size */
-}
-"""
+style_sheet = with open()
 app.setStyleSheet(style_sheet)
 # Crete first window for initializing perceptron parameters
 parametrize_window = ParametrizeWindow(app)

@@ -52,6 +52,8 @@ class Classifier:
         self.weights = self.initialize_starter_weights()
         # Train
         self.train()
+        # Test
+        # self.test()
 
     def train(self):
         # Iterate 'epoch' number of times
@@ -142,13 +144,18 @@ class Classifier:
 
     def initialize_starter_weights(self):
         # treshold - also known as bias
-        bias = 2
-        weights = [(random() + 1) / 10 for _ in range(self.num_of_dimensions)]
+        bias = 1.5
+        weights = [float((random() + 1) / 10.) for _ in range(self.num_of_dimensions)]
         weights.insert(0, bias)
         return weights
 
 
+    def get_accuracy_over_time(self):
+        return self.accuracy_list
+
+
     def test(self):
+        print("Number of precision values", len(self.accuracy_list))
         print(self.classes_map)
         print(self.weights)
 
