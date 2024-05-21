@@ -1,13 +1,19 @@
 # My implementation of single perceptron
 Author : Jeremi L
 
-Creator of app icon : mpanicon
-
 # Initial Page
-<img src="https://github.com/JeremiJL/test_learning/assets/101462889/0c4d18b1-3231-41bc-b631-97c7ea33fd26" align="center" width="50%" height="50%">
+<p align="center">
+  <img src="https://github.com/JeremiJL/Single-Perceptron/blob/master/images/screenshots/1st.png" width="350" title="Initial page">
+</p>
 
 # Classification Page
-<img src="https://github.com/JeremiJL/test_learning/assets/101462889/fd534017-5c75-40d0-982a-d933ff103347" align="center" width="50%" height="50%">
+<p align="center">
+  <img src="https://github.com/JeremiJL/Single-Perceptron/blob/master/images/screenshots/2nd.png" width="350" title="Classification page">
+</p>
 
 # Plot of perceptron
-<img src="https://github.com/JeremiJL/test_learning/assets/101462889/c196eff9-719f-4de1-b8fc-df394aa45a10" align="center" width="30%" height="30%">
+<p align="center">
+  <img src="https://github.com/JeremiJL/Single-Perceptron/blob/master/images/screenshots/3rd.png" width="350" title="Plot of perceptron">
+</p>
+
+Creator of app icon : mpanicon
